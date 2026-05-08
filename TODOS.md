@@ -32,11 +32,11 @@
 
 ### 1.3 StarRocks环境
 
-- [ ] 搭建StarRocks开发环境
-- [ ] 创建作业元数据表(job_meta)
-- [ ] 创建诊断事件表(incidents)
-- [ ] 创建日志表(logs)
-- [ ] 创建物化视图(mv_job_failure_stats, mv_top_error_codes)
+- [x] 搭建StarRocks开发环境
+- [x] 创建作业元数据表(job_meta)
+- [x] 创建诊断事件表(incidents)
+- [x] 创建日志表(logs)
+- [x] 创建物化视图(mv_job_failure_stats, mv_top_error_codes)
 
 ---
 
