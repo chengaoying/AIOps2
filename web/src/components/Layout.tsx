@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useLocation } from 'react-router-dom'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   LayoutDashboard,
   Database,
@@ -11,6 +11,8 @@ import {
   Server,
   ChevronDown,
   ChevronRight,
+  PanelLeftClose,
+  PanelLeft,
 } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -47,6 +49,20 @@ const navItems: NavItem[] = [
 export default function Layout() {
   const location = useLocation()
   const [expandedMenus, setExpandedMenus] = useState<string[]>(['作业诊断', '系统配置'])
+  const [isCollapsed, setIsCollapsed] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768)
+      if (window.innerWidth < 768) {
+        setIsCollapsed(true)
+      }
+    }
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
 
   const toggleMenu = (label: string) => {
     setExpandedMenus((prev) =>
@@ -64,13 +80,47 @@ export default function Layout() {
     return children.some((child) => location.pathname === child.path)
   }
 
+  const sidebarWidth = isCollapsed ? '60px' : '220px'
+
   return (
     <div className="app-layout">
-      <aside className="sidebar">
-        <div style={{ padding: '16px', borderBottom: '1px solid var(--border)' }}>
-          <span style={{ fontSize: '18px', fontWeight: 700, color: 'var(--info)' }}>
-            AIOps
-          </span>
+      <aside
+        className="sidebar"
+        style={{
+          width: sidebarWidth,
+          transition: 'width 0.2s ease',
+          overflow: 'hidden',
+          flexShrink: 0,
+        }}
+      >
+        <div
+          style={{
+            padding: '16px',
+            borderBottom: '1px solid var(--border)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: isCollapsed ? 'center' : 'space-between',
+          }}
+        >
+          {!isCollapsed && (
+            <span style={{ fontSize: '18px', fontWeight: 700, color: 'var(--info)' }}>
+              AIOps
+            </span>
+          )}
+          <button
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              padding: '4px',
+              color: 'var(--text-secondary)',
+              display: 'flex',
+              alignItems: 'center',
+            }}
+          >
+            {isCollapsed ? <PanelLeft size={16} /> : <PanelLeftClose size={16} />}
+          </button>
         </div>
 
         <nav style={{ padding: '8px 0' }}>
@@ -80,25 +130,47 @@ export default function Layout() {
                 <NavLink
                   to={item.path}
                   className={clsx('nav-item', isActive(item.path) && 'active')}
+                  title={isCollapsed ? item.label : undefined}
+                  style={{
+                    justifyContent: isCollapsed ? 'center' : 'flex-start',
+                    padding: isCollapsed ? '10px' : '10px 16px',
+                  }}
                 >
                   {item.icon}
-                  <span style={{ marginLeft: '8px' }}>{item.label}</span>
+                  {!isCollapsed && (
+                    <span style={{ marginLeft: '8px' }}>{item.label}</span>
+                  )}
                 </NavLink>
               ) : (
                 <>
                   <div
                     className={clsx('nav-item', 'has-submenu', isChildActive(item.children) && 'active')}
-                    onClick={() => toggleMenu(item.label)}
+                    onClick={() => {
+                      if (isCollapsed) {
+                        setIsCollapsed(false)
+                      } else {
+                        toggleMenu(item.label)
+                      }
+                    }}
+                    title={isCollapsed ? item.label : undefined}
+                    style={{
+                      justifyContent: isCollapsed ? 'center' : 'flex-start',
+                      padding: isCollapsed ? '10px' : '10px 16px',
+                    }}
                   >
                     {item.icon}
-                    <span style={{ marginLeft: '8px', flex: 1 }}>{item.label}</span>
-                    {expandedMenus.includes(item.label) ? (
-                      <ChevronDown size={14} />
-                    ) : (
-                      <ChevronRight size={14} />
+                    {!isCollapsed && (
+                      <>
+                        <span style={{ marginLeft: '8px', flex: 1 }}>{item.label}</span>
+                        {expandedMenus.includes(item.label) ? (
+                          <ChevronDown size={14} />
+                        ) : (
+                          <ChevronRight size={14} />
+                        )}
+                      </>
                     )}
                   </div>
-                  {expandedMenus.includes(item.label) && item.children && (
+                  {!isCollapsed && expandedMenus.includes(item.label) && item.children && (
                     <div className="nav-submenu">
                       {item.children.map((child) => (
                         <NavLink
