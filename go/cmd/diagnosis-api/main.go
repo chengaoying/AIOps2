@@ -1,16 +1,61 @@
 package main
 
 import (
+	"context"
+	"database/sql"
+	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	_ "github.com/go-sql-driver/mysql"
+
+	"aiops2/diagnosis-api/internal/cache"
+	"aiops2/diagnosis-api/internal/context"
+	"aiops2/diagnosis-api/internal/engine"
+	"aiops2/diagnosis-api/internal/kb"
+	"aiops2/diagnosis-api/internal/llm"
 )
 
 func main() {
 	if os.Getenv("GIN_MODE") == "" {
 		gin.SetMode(gin.ReleaseMode)
 	}
+
+	db, err := sql.Open("mysql", getDSN())
+	if err != nil {
+		log.Printf("db open failed: %v, continuing without db", err)
+		db = nil
+	}
+	if db != nil {
+		db.SetMaxOpenConns(10)
+		db.SetMaxIdleConns(5)
+		db.SetConnMaxLifetime(5 * time.Minute)
+	}
+
+	kbInstance := kb.NewHybridKnowledgeBase()
+
+	var ctxBuilder *context.ContextBuilder
+	if db != nil {
+		ctxBuilder = context.New(db)
+	}
+
+	var cacheInstance *cache.Cache
+	redisAddr := os.Getenv("REDIS_ADDR")
+	if redisAddr != "" {
+		cacheInstance, err = cache.New(redisAddr, time.Hour)
+		if err != nil {
+			log.Printf("cache init failed: %v", err)
+		}
+	}
+
+	llmReasoner := llm.NewLLMReasoner(
+		os.Getenv("LLM_API_KEY"),
+		os.Getenv("LLM_ENDPOINT"),
+	)
+
+	diagEngine := engine.NewDiagnosisEngine(kbInstance, ctxBuilder, cacheInstance, llmReasoner)
 
 	r := gin.Default()
 
@@ -21,9 +66,9 @@ func main() {
 	api := r.Group("/api/v1")
 	{
 		api.GET("/dashboard/home", handleDashboardHome)
-		api.POST("/diagnosis", handleDiagnosis)
+		api.POST("/diagnosis", handleDiagnosis(diagEngine))
 		api.GET("/diagnosis/history", handleDiagnosisHistory)
-		api.POST("/knowledge/retrieve", handleKnowledgeRetrieve)
+		api.POST("/knowledge/retrieve", handleKnowledgeRetrieve(kbInstance))
 		api.POST("/assistant/chat", handleChat)
 	}
 
@@ -38,9 +83,26 @@ func main() {
 	}
 }
 
+func getDSN() string {
+	host := os.Getenv("STARROCKS_HOST")
+	if host == "" {
+		host = "localhost"
+	}
+	port := os.Getenv("STARROCKS_PORT")
+	if port == "" {
+		port = "9030"
+	}
+	user := os.Getenv("STARROCKS_USER")
+	if user == "" {
+		user = "root"
+	}
+	password := os.Getenv("STARROCKS_PASSWORD")
+	return fmt.Sprintf("%s:%s@tcp(%s:%s)/aiops?charset=utf8mb4", user, password, host, port)
+}
+
 func handleDashboardHome(c *gin.Context) {
 	c.JSON(200, gin.H{
-		"date":    "2026-05-08",
+		"date":    time.Now().Format("2006-01-02"),
 		"cluster": "生产集群",
 		"today_stats": gin.H{
 			"total_count":   156,
@@ -62,27 +124,22 @@ func handleDashboardHome(c *gin.Context) {
 	})
 }
 
-func handleDiagnosis(c *gin.Context) {
-	var req struct {
-		JobID   string `json:"job_id"`
-		Content string `json:"content"`
-	}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(400, gin.H{"error": "invalid request"})
-		return
-	}
+func handleDiagnosis(diagEngine *engine.DiagnosisEngine) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var req engine.DiagnosisRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(400, gin.H{"error": "invalid request"})
+			return
+		}
 
-	c.JSON(200, gin.H{
-		"job_id":     req.JobID,
-		"platform":   "SPARK",
-		"status":     "FAILED",
-		"root_cause": "Executor 内存溢出，导致 Task 被 Kill",
-		"confidence": 0.92,
-		"suggestions": []gin.H{
-			{"action": "增加 executor 内存", "risk": "低", "detail": "将 spark.executor.memory 从 4g 增加到 6g", "command": "--conf spark.executor.memory=6g"},
-			{"action": "优化数据分区", "risk": "中", "detail": "使用 salting 策略解决数据倾斜问题"},
-		},
-	})
+		result, err := diagEngine.Diagnose(c.Request.Context(), &req)
+		if err != nil {
+			c.JSON(500, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(200, result)
+	}
 }
 
 func handleDiagnosisHistory(c *gin.Context) {
@@ -96,31 +153,34 @@ func handleDiagnosisHistory(c *gin.Context) {
 	})
 }
 
-func handleKnowledgeRetrieve(c *gin.Context) {
-	var req struct {
-		Platform string `json:"platform"`
-		ErrorMsg string `json:"error_msg"`
-		TopK     int    `json:"top_k"`
-	}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(400, gin.H{"error": "invalid request"})
-		return
-	}
+func handleKnowledgeRetrieve(kbInstance kb.KnowledgeBase) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var req struct {
+			Platform string `json:"platform"`
+			ErrorMsg string `json:"error_msg"`
+			TopK     int    `json:"top_k"`
+		}
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(400, gin.H{"error": "invalid request"})
+			return
+		}
 
-	c.JSON(200, gin.H{
-		"cards": []gin.H{
-			{
-				"id":          "KB-20260508-00001",
-				"platform":    "SPARK",
-				"error_type":  "Executor OOM",
-				"root_cause":  "Executor 分配的内存不足以处理数据集",
-				"confidence":  0.92,
-				"suggestions": []gin.H{
-					{"action": "增加 executor 内存", "risk": "低", "detail": "将 spark.executor.memory 从 4g 增加到 6g"},
-				},
-			},
-		},
-	})
+		if req.TopK == 0 {
+			req.TopK = 5
+		}
+
+		cards, err := kbInstance.Retrieve(context.Background(), &kb.RetrieveRequest{
+			Platform: req.Platform,
+			ErrorMsg: req.ErrorMsg,
+			TopK:     req.TopK,
+		})
+		if err != nil {
+			c.JSON(500, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(200, gin.H{"cards": cards})
+	}
 }
 
 func handleChat(c *gin.Context) {

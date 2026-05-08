@@ -76,30 +76,30 @@
 
 ### 3.1 规则引擎
 
-- [ ] 实现前缀树索引
-- [ ] 编写YARN规则（OOM、队列满、Container启动失败等）
-- [ ] 编写Hive规则（语义错误、SerDe冲突、内存不足等）
-- [ ] 编写Spark规则（Executor OOM、Stage失败、Shuffle错误等）
-- [ ] 编写Flink规则（Checkpoint超时、TM内存、Kafka超时等）
+- [x] 实现前缀树索引
+- [x] 编写YARN规则（OOM、队列满、Container启动失败等）
+- [x] 编写Hive规则（语义错误、SerDe冲突、内存不足等）
+- [x] 编写Spark规则（Executor OOM、Stage失败、Shuffle错误等）
+- [x] 编写Flink规则（Checkpoint超时、TM内存、Kafka超时等）
 
 ### 3.2 LLM调用
 
-- [ ] 实现Prompt安全防护（三层防护）
-- [ ] 集成通义千问API
-- [ ] 实现输出解析器
+- [x] 实现Prompt安全防护（三层防护）
+- [x] 集成通义千问API
+- [x] 实现输出解析器
 
 ### 3.3 上下文构建
 
-- [ ] 实现Context Builder
-- [ ] 实现作业链查询
-- [ ] 实现相似案例检索
-- [ ] 实现日志上下文获取
+- [x] 实现Context Builder
+- [x] 实现作业链查询
+- [x] 实现相似案例检索
+- [x] 实现日志上下文获取
 
 ### 3.4 缓存与降级
 
-- [ ] 实现Redis缓存（TTL=1小时）
-- [ ] 实现LLM失败→规则引擎降级
-- [ ] 实现令牌桶限流（10 QPS）
+- [x] 实现Redis缓存（TTL=1小时）
+- [x] 实现LLM失败→规则引擎降级
+- [x] 实现令牌桶限流（10 QPS）
 
 ---
 

@@ -1,10 +1,11 @@
-module github.com/AIOps/diagnosis-api
+module aiops2/diagnosis-api
 
 go 1.21
 
 require (
 	github.com/gin-gonic/gin v1.9.1
-	github.com/go-redis/redis/v8 v8.11.5
+	github.com/go-redis/redis/v9 v9.0.0
+	github.com/go-sql-driver/mysql v1.7.1
 )
 
 require (
