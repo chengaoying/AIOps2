@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIOps 产品设计 - PRD 演示</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/dist/reveal.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/dist/theme/white.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        :root {
+            --r-main-font: 'Plus Jakarta Sans', 'Noto Sans SC', sans-serif;
+            --r-heading-font: 'Plus Jakarta Sans', 'Noto Sans SC', sans-serif;
+            --r-code-font: 'JetBrains Mono', monospace;
+        }
+
+        .reveal {
+            font-size: 28px;
+        }
+
+        .reveal h1 { font-size: 2.2em; font-weight: 700; }
+        .reveal h2 { font-size: 1.6em; font-weight: 600; color: #1a1a1a; }
+        .reveal h3 { font-size: 1.2em; font-weight: 600; color: #444; }
+
+        .reveal section {
+            text-align: left;
+        }
+
+        .reveal .slides > section {
+            padding: 40px;
+        }
+
+        /* 平台色 */
+        .yarn { color: #FF6B6B; }
+        .hive { color: #B8860B; }
+        .spark { color: #008080; }
+        .flink { color: #45B7D1; }
+
+        .bg-yarn { background: #FF6B6B; color: white; }
+        .bg-hive { background: #FFE66D; color: #333; }
+        .bg-spark { background: #4ECDC4; color: white; }
+        .bg-flink { background: #45B7D1; color: white; }
+
+        /* 表格样式 */
+        .reveal table {
+            font-size: 0.7em;
+            width: 100%;
+        }
+
+        .reveal table th {
+            background: #f5f5f5;
+        }
+
+        .reveal table td, .reveal table th {
+            border: 1px solid #e5e5e5;
+            padding: 8px 12px;
+        }
+
+        /* Mermaid 容器 */
+        .mermaid-container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        /* 代码块 */
+        .reveal pre {
+            width: 100%;
+            font-size: 0.5em;
+        }
+
+        .reveal code {
+            background: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: var(--r-code-font);
+        }
+
+        /* 标签 */
+        .tag {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 999px;
+            font-size: 0.7em;
+            font-weight: 500;
+        }
+
+        .tag-primary { background: #DBEAFE; color: #2563EB; }
+        .tag-success { background: #DCFCE7; color: #16A34A; }
+        .tag-warning { background: #FEF3C7; color: #F59E0B; }
+        .tag-danger { background: #FEE2E2; color: #DC2626; }
+
+        /* 两列布局 */
+        .two-col {
+            display: flex;
+            gap: 40px;
+            align-items: flex-start;
+        }
+
+        .two-col > div {
+            flex: 1;
+        }
+
+        /* 三列布局 */
+        .three-col {
+            display: flex;
+            gap: 20px;
+        }
+
+        .three-col > div {
+            flex: 1;
+        }
+
+        /* 功能卡片 */
+        .feature-card {
+            background: #fafafa;
+            border-radius: 8px;
+            padding: 20px;
+            border-left: 4px solid #2563EB;
+        }
+
+        /* 导航结构 */
+        .nav-tree {
+            font-family: var(--r-code-font);
+            font-size: 0.7em;
+            line-height: 1.8;
+        }
+
+        .nav-tree .icon {
+            color: #2563EB;
+        }
+
+        /* 高亮块 */
+        .highlight-box {
+            background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%);
+            border-left: 4px solid #2563EB;
+            padding: 16px 20px;
+            border-radius: 0 8px 8px 0;
+            margin: 16px 0;
+        }
+
+        /* 封面样式 */
+        .title-slide {
+            text-align: center !important;
+        }
+
+        .title-slide h1 {
+            font-size: 2.5em;
+            color: #1a1a1a;
+            margin-bottom: 20px;
+        }
+
+        .title-slide .subtitle {
+            font-size: 1.2em;
+            color: #666;
+            margin-bottom: 40px;
+        }
+
+        .title-slide .meta {
+            font-size: 0.8em;
+            color: #999;
+        }
+
+        /* Logo */
+        .logo {
+            font-weight: 700;
+            color: #2563EB;
+        }
+
+        /* 进度条 */
+        .progress-card {
+            background: white;
+            border-radius: 8px;
+            padding: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .progress-card .number {
+            font-size: 2em;
+            font-weight: 700;
+            color: #2563EB;
+        }
+
+        .progress-card .label {
+            font-size: 0.7em;
+            color: #666;
+            margin-top: 8px;
+        }
+
+        .progress-card.success .number { color: #16A34A; }
+        .progress-card.danger .number { color: #DC2626; }
+
+        /* 架构图节点 */
+        .arch-node {
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 12px 16px;
+            font-size: 0.6em;
+        }
+
+        .arch-node.primary {
+            background: #EFF6FF;
+            border-color: #2563EB;
+        }
+
+        .arch-node.success {
+            background: #DCFCE7;
+            border-color: #16A34A;
+        }
+
+        /* 依赖项 */
+        .tech-item {
+            display: inline-flex;
+            align-items: center;
+            background: #f5f5f5;
+            padding: 6px 14px;
+            border-radius: 6px;
+            margin: 4px;
+            font-size: 0.75em;
+        }
+
+        /* 平台徽章 */
+        .platform-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.6em;
+            font-weight: 600;
+            color: white;
+        }
+
+        /* 服务卡片 */
+        .service-card {
+            background: white;
+            border: 1px solid #e5e5e5;
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .service-card .name {
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 8px;
+        }
+
+        .service-card .lang {
+            font-size: 0.7em;
+            color: #666;
+        }
+
+        /* 决策表 */
+        .decision-item {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 16px;
+            padding: 12px;
+            background: #fafafa;
+            border-radius: 6px;
+        }
+
+        .decision-item .check {
+            color: #16A34A;
+            margin-right: 12px;
+            font-size: 1.2em;
+        }
+
+        /* 色彩展示 */
+        .color-swatch {
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.6em;
+            font-weight: 600;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 2em !important;
+            color: #2563EB !important;
+            margin-bottom: 40px !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="reveal">
+        <div class="slides">
+
+            <!-- 封面 -->
+            <section class="title-slide">
+                <h1><span class="logo">AIOps</span> 大数据智能诊断平台</h1>
+                <p class="subtitle">产品设计文档 (PRD)</p>
+                <div class="highlight-box" style="text-align: center; display: inline-block; margin: 20px auto;">
+                    <strong>核心价值</strong>：30秒内给出根因分析和修复建议
+                </div>
+                <p class="meta">版本 1.0 &nbsp;|&nbsp; 2026-05-08 &nbsp;|&nbsp; B端数据诊断 Dashboard</p>
+            </section>
+
+            <!-- 目录 -->
+            <section>
+                <h2 class="section-title">目录</h2>
+                <div style="display: flex; justify-content: center;">
+                    <ol style="font-size: 1.1em; line-height: 2;">
+                        <li>产品概述与定位</li>
+                        <li>用户故事与痛点</li>
+                        <li>功能规格</li>
+                        <li>信息架构</li>
+                        <li>技术架构</li>
+                        <li>设计系统</li>
+                        <li>服务划分</li>
+                    </ol>
+                </div>
+            </section>
+
+            <!-- 产品定位 -->
+            <section>
+                <h2>产品定位</h2>
+                <table>
+                    <tr><th>属性</th><th>描述</th></tr>
+                    <tr><td><strong>产品名称</strong></td><td>AIOps 大数据智能诊断平台</td></tr>
+                    <tr><td><strong>产品类型</strong></td><td>B端数据诊断 Dashboard</td></tr>
+                    <tr><td><strong>目标用户</strong></td><td>大数据平台运维工程师、数据工程师、DevOps 团队</td></tr>
+                    <tr><td><strong>核心场景</strong></td><td>凌晨作业失败时，快速诊断问题根因</td></tr>
+                    <tr><td><strong>核心价值</strong></td><td><span class="tag tag-primary">30秒内给出根因分析和修复建议</span></td></tr>
+                </table>
+            </section>
+
+            <!-- 设计原则 -->
+            <section>
+                <h2>设计原则</h2>
+                <div class="three-col">
+                    <div class="feature-card">
+                        <h3>功能优先</h3>
+                        <p>简单易用，减少运维压力，所有元素服务功能</p>
+                    </div>
+                    <div class="feature-card" style="border-color: #16A34A;">
+                        <h3>实用主义</h3>
+                        <p>视觉噪音归零，无渐变、无阴影、无装饰性图形</p>
+                    </div>
+                    <div class="feature-card" style="border-color: #F59E0B;">
+                        <h3>快速高效</h3>
+                        <p>信息密度高但层次清晰，一眼识别关键信息</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 用户痛点 -->
+            <section>
+                <h2>用户痛点</h2>
+                <table>
+                    <tr><th>痛点</th><th>现状</th><th>期望</th></tr>
+                    <tr>
+                        <td><span class="tag tag-danger">排查耗时长</span></td>
+                        <td>登录多系统，手动查日志</td>
+                        <td>一键诊断</td>
+                    </tr>
+                    <tr>
+                        <td><span class="tag tag-warning">跨平台复杂</span></td>
+                        <td>YARN/Hive/Spark/Flink 各不同</td>
+                        <td>统一视图</td>
+                    </tr>
+                    <tr>
+                        <td><span class="tag tag-danger">根因不明确</span></td>
+                        <td>日志分散，难以定位</td>
+                        <td>AI 自动分析</td>
+                    </tr>
+                    <tr>
+                        <td><span class="tag tag-warning">修复方案模糊</span></td>
+                        <td>需要自行研究</td>
+                        <td>给出具体建议</td>
+                    </tr>
+                </table>
+            </section>
+
+            <!-- 核心功能 -->
+            <section>
+                <h2>核心功能</h2>
+                <div class="two-col">
+                    <div>
+                        <div class="feature-card" style="margin-bottom: 16px;">
+                            <h3>F1: Dashboard 首页</h3>
+                            <p>今日概览统计 · 平台分布可视化 · 最近诊断列表</p>
+                        </div>
+                        <div class="feature-card" style="margin-bottom: 16px;">
+                            <h3>F2: 作业诊断 <span class="tag tag-primary">P0</span></h3>
+                            <p>输入作业ID/日志 → 知识库检索 → LLM 推理 → 根因+建议</p>
+                        </div>
+                        <div class="feature-card">
+                            <h3>F3: 诊断历史</h3>
+                            <p>按时间/平台/状态筛选 · 查看历史详情</p>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="feature-card" style="margin-bottom: 16px;">
+                            <h3>F4: AI 助手</h3>
+                            <p>自然语言查询 · 多轮对话</p>
+                        </div>
+                        <div class="feature-card">
+                            <h3>F5: 系统配置</h3>
+                            <p>用户管理 · 集群配置 · 系统配置</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 功能优先级 -->
+            <section>
+                <h2>功能优先级</h2>
+                <div class="two-col">
+                    <div>
+                        <div style="margin-bottom: 20px;">
+                            <span class="tag tag-danger" style="font-size: 1em; padding: 8px 16px;">P0</span>
+                            <p style="margin-top: 10px;">作业诊断 · Dashboard 首页</p>
+                        </div>
+                        <div style="margin-bottom: 20px;">
+                            <span class="tag tag-warning" style="font-size: 1em; padding: 8px 16px;">P1</span>
+                            <p style="margin-top: 10px;">诊断历史 · AI 助手</p>
+                        </div>
+                        <div>
+                            <span class="tag tag-primary" style="font-size: 1em; padding: 8px 16px;">P2</span>
+                            <p style="margin-top: 10px;">系统配置</p>
+                        </div>
+                    </div>
+                    <div>
+                        <h3>Phase 2 规划</h3>
+                        <ul>
+                            <li>自愈系统</li>
+                            <li>预测性告警</li>
+                            <li>多集群管理</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 导航结构 -->
+            <section>
+                <h2>信息架构</h2>
+                <div class="two-col">
+                    <div>
+                        <div class="nav-tree">
+<pre>├── <span class="icon">📊</span> Dashboard        [layout-dashboard]
+├── <span class="icon">🗄️</span> 元仓             [database]
+├── <span class="icon">🔍</span> 作业诊断 ▼       [search]
+│   ├── 作业诊断
+│   └── 诊断历史     [history]
+├── <span class="icon">💬</span> AI 助手          [message-circle]
+└── <span class="icon">⚙️</span> 系统配置 ▼       [settings]
+    ├── 用户管理     [users]
+    ├── 集群配置     [server]
+    └── 系统配置</pre>
+                        </div>
+                    </div>
+                    <div>
+                        <h3>页面清单</h3>
+                        <table style="font-size: 0.8em;">
+                            <tr><th>页面</th><th>路径</th></tr>
+                            <tr><td>Dashboard 首页</td><td>/dashboard</td></tr>
+                            <tr><td>作业诊断</td><td>/diagnosis/job</td></tr>
+                            <tr><td>诊断历史</td><td>/diagnosis/history</td></tr>
+                            <tr><td>AI 助手</td><td>/assistant</td></tr>
+                            <tr><td>用户管理</td><td>/settings/users</td></tr>
+                            <tr><td>集群配置</td><td>/settings/clusters</td></tr>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 架构图 -->
+            <section>
+                <h2 class="section-title">技术架构</h2>
+            </section>
+
+            <!-- 系统架构图 -->
+            <section>
+                <h2>系统架构</h2>
+                <div class="mermaid">
+flowchart TB
+    subgraph DATA["数据源"]
+        YARN[YARN<br/>资源调度]
+        HIVE[Hive<br/>数据仓库]
+        SPARK[Spark<br/>计算引擎]
+        FLINK[Flink<br/>流处理]
+    end
+
+    subgraph COLLECT["Collector Agent"]
+        PQ[Plugin<br/>Registry]
+        MQ[Memory<br/>Queue]
+        WAL[WAL<br/>Disk]
+        BW[Batch<br/>Writer]
+    end
+
+    subgraph STORAGE["StarRocks"]
+        UJV[unified<br/>job_view]
+        JD[job<br/>dependency]
+        MRT[mv_resource<br/>trend]
+    end
+
+    subgraph DIAG["Diagnosis API"]
+        CB[Context<br/>Builder]
+        RC[Redis<br/>Cache]
+        LLM[LLM<br/>Caller]
+    end
+
+    subgraph KB["知识库模块"]
+        DC[Doc<br/>Collector]
+        LA[LLM<br/>Analyzer]
+        RT[Retriever]
+        VS[Vector<br/>Store]
+        FT[Full-text<br/>Index]
+    end
+
+    subgraph UI["用户层"]
+        DASH[Dashboard]
+        CHAT[Chat UI]
+        ALERT[Alert<br/>Manager]
+    end
+
+    YARN --> PQ
+    HIVE --> PQ
+    SPARK --> PQ
+    FLINK --> PQ
+    PQ --> MQ
+    MQ --> WAL
+    WAL --> BW
+    BW --> UJV
+    UJV --> CB
+    CB --> RC
+    RC --> LLM
+    LLM --> DASH
+    LLM --> CHAT
+
+    DC --> LA
+    LA --> VS
+    LA --> FT
+    RT --> VS
+    RT --> FT
+    RT --> CB
+                </div>
+            </section>
+
+            <!-- 诊断请求流 -->
+            <section>
+                <h2>诊断请求流</h2>
+                <div class="mermaid">
+flowchart LR
+    A[User<br/>Request] --> B[NL Query<br/>Parser]
+    B --> C[Context<br/>Builder]
+    C --> D[Knowledge Base<br/>Retrieval]
+
+    subgraph KB_RET["知识库检索"]
+        D1[错误模式<br/>向量相似度] --> F[RRF<br/>融合排序]
+        D2[关键词<br/>全文检索] --> F
+    end
+
+    F --> E[LLM<br/>Reasoner]
+    E --> G[Response<br/>根因+建议+置信度]
+
+    style KB_RET fill:#EFF6FF,stroke:#2563EB
+    style D fill:#DCFCE7,stroke:#16A34A
+    style E fill:#FEF3C7,stroke:#F59E0B
+    style G fill:#DBEAFE,stroke:#2563EB
+                </div>
+            </section>
+
+            <!-- 知识库构建流 -->
+            <section>
+                <h2>知识库构建流</h2>
+                <div class="mermaid">
+flowchart TB
+    subgraph SOURCES["文档来源"]
+        CONF[内部文档<br/>Confluence/Wiki]
+        DOCS[官方文档<br/>Hadoop/Spark/Flink]
+        OPS[运维记录<br/>历史诊断]
+    end
+
+    SOURCES --> DC[文档采集器<br/>Doc Collector]
+    DC --> DP[文档解析器<br/>PDF/MD/HTML/Doc]
+    DP --> LA[LLM 分析提炼器<br/>LLM Analyzer]
+
+    subgraph KB_STORE["知识库存储"]
+        VS[Vector Store<br/>向量存储]
+        FT[Full-text Index<br/>全文索引]
+    end
+
+    LA -->|实体提取/结构化| KB_STORE
+    LA -->|Embedding| VS
+
+    KB_STORE :::kbstyle
+
+    classDef kbstyle fill:#EFF6FF,stroke:#2563EB
+                </div>
+            </section>
+
+            <!-- 核心架构决策 -->
+            <section>
+                <h2>核心架构决策</h2>
+                <table>
+                    <tr><th>决策</th><th>选择</th><th>理由</th></tr>
+                    <tr>
+                        <td>消息队列</td>
+                        <td><span class="tag tag-success">去掉 Kafka</span></td>
+                        <td>简化架构，降低复杂度</td>
+                    </tr>
+                    <tr>
+                        <td>诊断策略</td>
+                        <td><span class="tag tag-primary">知识库+LLM</span></td>
+                        <td>可维护性强，覆盖面广</td>
+                    </tr>
+                    <tr>
+                        <td>LLM 安全</td>
+                        <td><span class="tag tag-warning">三层防护</span></td>
+                        <td>输入验证+结构化+输出验证</td>
+                    </tr>
+                    <tr>
+                        <td>高可用</td>
+                        <td><span class="tag tag-primary">无状态微服务</span></td>
+                        <td>便于扩展和故障恢复</td>
+                    </tr>
+                    <tr>
+                        <td>知识库</td>
+                        <td><span class="tag tag-primary">Vector+全文</span></td>
+                        <td>高效相似度匹配</td>
+                    </tr>
+                    <tr>
+                        <td>自愈系统</td>
+                        <td><span class="tag tag-primary">Phase 2</span></td>
+                        <td>Phase 1 聚焦诊断核心</td>
+                    </tr>
+                </table>
+            </section>
+
+            <!-- 服务划分 -->
+            <section>
+                <h2>服务划分</h2>
+                <div class="three-col">
+                    <div class="service-card">
+                        <div class="name">Collector Agent</div>
+                        <div class="lang">Go</div>
+                        <p style="font-size: 0.7em; margin-top: 8px;">数据采集、WAL缓冲、批量写入</p>
+                        <span class="tag tag-primary" style="font-size: 0.6em;">Phase 1</span>
+                    </div>
+                    <div class="service-card">
+                        <div class="name">Diagnosis API</div>
+                        <div class="lang">Go</div>
+                        <p style="font-size: 0.7em; margin-top: 8px;">知识库检索、LLM调用、缓存</p>
+                        <span class="tag tag-primary" style="font-size: 0.6em;">Phase 1</span>
+                    </div>
+                    <div class="service-card">
+                        <div class="name">Knowledge Base API</div>
+                        <div class="lang">Go</div>
+                        <p style="font-size: 0.7em; margin-top: 8px;">知识库管理、文档采集、索引</p>
+                        <span class="tag tag-primary" style="font-size: 0.6em;">Phase 1</span>
+                    </div>
+                </div>
+                <div class="three-col" style="margin-top: 20px;">
+                    <div class="service-card">
+                        <div class="name">Alert Manager</div>
+                        <div class="lang">Go</div>
+                        <p style="font-size: 0.7em; margin-top: 8px;">告警聚合、渠道分发</p>
+                        <span class="tag tag-primary" style="font-size: 0.6em;">Phase 1</span>
+                    </div>
+                    <div class="service-card">
+                        <div class="name">Dashboard</div>
+                        <div class="lang">React</div>
+                        <p style="font-size: 0.7em; margin-top: 8px;">诊断表单、结果展示</p>
+                        <span class="tag tag-primary" style="font-size: 0.6em;">Phase 1</span>
+                    </div>
+                    <div class="service-card">
+                        <div class="name">Chat UI</div>
+                        <div class="lang">React</div>
+                        <p style="font-size: 0.7em; margin-top: 8px;">自然语言交互</p>
+                        <span class="tag tag-primary" style="font-size: 0.6em;">Phase 1</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 外部依赖 -->
+            <section>
+                <h2>外部依赖</h2>
+                <div class="two-col">
+                    <div>
+                        <h3>运行时</h3>
+                        <span class="tech-item">Go 1.21+</span>
+                        <span class="tech-item">React 18+</span>
+                        <span class="tech-item">StarRocks 2.5+</span>
+                        <span class="tech-item">Redis 7+</span>
+
+                        <h3 style="margin-top: 20px;">向量 & 搜索</h3>
+                        <span class="tech-item">Milvus / Qdrant</span>
+                        <span class="tech-item">Elasticsearch</span>
+
+                        <h3 style="margin-top: 20px;">AI</h3>
+                        <span class="tech-item">通义千问 (LLM)</span>
+                    </div>
+                    <div>
+                        <h3>可选向量数据库对比</h3>
+                        <table style="font-size: 0.7em;">
+                            <tr><th>方案</th><th>特点</th></tr>
+                            <tr><td>Milvus</td><td>CNCF毕业，大规模生产</td></tr>
+                            <tr><td>Qdrant</td><td>Rust实现，低延迟</td></tr>
+                            <tr><td>Weaviate</td><td>多模态支持</td></tr>
+                            <tr><td>Chroma</td><td>轻量级，原型</td></tr>
+                        </table>
+                        <p style="font-size: 0.7em; margin-top: 10px;"><strong>推荐</strong>：Qdrant (性能优、易部署)</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 设计系统 - 色彩 -->
+            <section>
+                <h2 class="section-title">设计系统</h2>
+            </section>
+
+            <!-- 平台色彩 -->
+            <section>
+                <h2>平台色彩系统</h2>
+                <p>色彩作为信号，不做装饰。平台色用于组件标识，一眼识别组件类型。</p>
+                <div class="four-col" style="display: flex; justify-content: space-around; margin-top: 40px;">
+                    <div style="text-align: center;">
+                        <div class="color-swatch" style="background: #FF6B6B;">YARN</div>
+                        <p style="font-size: 0.8em; margin-top: 10px;">#FF6B6B<br/><span style="color: #666;">资源调度</span></p>
+                    </div>
+                    <div style="text-align: center;">
+                        <div class="color-swatch" style="background: #FFE66D; color: #333;">HIVE</div>
+                        <p style="font-size: 0.8em; margin-top: 10px;">#FFE66D<br/><span style="color: #666;">数据仓库</span></p>
+                    </div>
+                    <div style="text-align: center;">
+                        <div class="color-swatch" style="background: #4ECDC4;">SPARK</div>
+                        <p style="font-size: 0.8em; margin-top: 10px;">#4ECDC4<br/><span style="color: #666;">计算引擎</span></p>
+                    </div>
+                    <div style="text-align: center;">
+                        <div class="color-swatch" style="background: #45B7D1;">FLINK</div>
+                        <p style="font-size: 0.8em; margin-top: 10px;">#45B7D1<br/><span style="color: #666;">流处理</span></p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 状态色 -->
+            <section>
+                <h2>状态色彩</h2>
+                <div class="two-col">
+                    <div>
+                        <h3>状态色</h3>
+                        <table>
+                            <tr><th>状态</th><th>颜色</th><th>场景</th></tr>
+                            <tr><td><span style="color: #DC2626;">●</span> 危险</td><td>#DC2626</td><td>诊断失败、严重错误</td></tr>
+                            <tr><td><span style="color: #F59E0B;">●</span> 警告</td><td>#F59E0B</td><td>警告提示、需要关注</td></tr>
+                            <tr><td><span style="color: #16A34A;">●</span> 成功</td><td>#16A34A</td><td>诊断成功、正常状态</td></tr>
+                            <tr><td><span style="color: #2563EB;">●</span> 信息</td><td>#2563EB</td><td>主操作按钮、链接</td></tr>
+                        </table>
+                    </div>
+                    <div>
+                        <h3>置信度 & 风险</h3>
+                        <table>
+                            <tr><th>置信度</th><th>颜色</th></tr>
+                            <tr><td>≥ 90%</td><td><span style="color: #16A34A;">●</span> #16A34A</td></tr>
+                            <tr><td>≥ 70%</td><td><span style="color: #F59E0B;">●</span> #F59E0B</td></tr>
+                            <tr><td>< 70%</td><td><span style="color: #EF4444;">●</span> #EF4444</td></tr>
+                        </table>
+                        <table style="margin-top: 20px;">
+                            <tr><th>风险</th><th>颜色</th></tr>
+                            <tr><td>低</td><td><span style="color: #16A34A;">●</span> #16A34A</td></tr>
+                            <tr><td>中</td><td><span style="color: #F59E0B;">●</span> #F59E0B</td></tr>
+                            <tr><td>高</td><td><span style="color: #EF4444;">●</span> #EF4444</td></tr>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 字体 & 图标 -->
+            <section>
+                <h2>字体 & 图标系统</h2>
+                <div class="two-col">
+                    <div>
+                        <h3>字体系统</h3>
+                        <table>
+                            <tr><th>用途</th><th>字体</th><th>字号</th></tr>
+                            <tr><td>页面标题</td><td>Plus Jakarta Sans</td><td>20px/600</td></tr>
+                            <tr><td>卡片标题</td><td>Plus Jakarta Sans</td><td>16px/600</td></tr>
+                            <tr><td>正文</td><td>Noto Sans SC</td><td>14px/400</td></tr>
+                            <tr><td>标签</td><td>Noto Sans SC</td><td>12px/500</td></tr>
+                            <tr><td>代码</td><td>JetBrains Mono</td><td>13px/400</td></tr>
+                        </table>
+                    </div>
+                    <div>
+                        <h3>图标系统</h3>
+                        <p><strong>Lucide Icons</strong> (stroke-width: 2)</p>
+                        <table style="font-size: 0.8em;">
+                            <tr><th>导航项</th><th>图标</th></tr>
+                            <tr><td>Dashboard</td><td>layout-dashboard</td></tr>
+                            <tr><td>元仓</td><td>database</td></tr>
+                            <tr><td>作业诊断</td><td>search</td></tr>
+                            <tr><td>AI 助手</td><td>message-circle</td></tr>
+                            <tr><td>系统配置</td><td>settings</td></tr>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 动效 & 响应式 -->
+            <section>
+                <h2>动效 & 响应式</h2>
+                <div class="two-col">
+                    <div>
+                        <h3>动效规范</h3>
+                        <table>
+                            <tr><th>类型</th><th>时长</th><th>场景</th></tr>
+                            <tr><td>micro</td><td>0.15s</td><td>按钮 hover, 输入框 focus</td></tr>
+                            <tr><td>normal</td><td>0.25s</td><td>面板展开, Toast 出现</td></tr>
+                            <tr><td>slow</td><td>0.35s</td><td>模态框, 下拉菜单</td></tr>
+                        </table>
+                    </div>
+                    <div>
+                        <h3>响应式断点</h3>
+                        <table>
+                            <tr><th>断点</th><th>宽度</th><th>布局</th></tr>
+                            <tr><td>xl</td><td>≥1200px</td><td>完整侧边栏 (200px)</td></tr>
+                            <tr><td>lg</td><td>1024-1199px</td><td>侧边栏收窄 (160px)</td></tr>
+                            <tr><td>md</td><td>768-1023px</td><td>图标模式 (64px)</td></tr>
+                            <tr><td>sm</td><td><768px</td><td>底部 Tab + 单列</td></tr>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 无障碍 & 深色模式 -->
+            <section>
+                <h2>无障碍 & 深色模式</h2>
+                <div class="two-col">
+                    <div>
+                        <h3>无障碍设计</h3>
+                        <p>遵循 WCAG 2.1 AA 标准</p>
+                        <ul>
+                            <li>正文文字对比度 ≥4.5:1</li>
+                            <li>大文本对比度 ≥3:1</li>
+                            <li>UI 组件边界 ≥3:1</li>
+                            <li>Tab 聚焦支持</li>
+                            <li>模态框 Esc 关闭</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3>深色模式色板</h3>
+                        <table style="font-size: 0.8em;">
+                            <tr><th>用途</th><th>浅色</th><th>深色</th></tr>
+                            <tr><td>主背景</td><td>#FFFFFF</td><td style="background: #1E293B; color: white;">#1E293B</td></tr>
+                            <tr><td>次级背景</td><td>#F5F5F5</td><td style="background: #0F172A; color: white;">#0F172A</td></tr>
+                            <tr><td>边框</td><td>#E5E5E5</td><td style="background: #334155; color: white;">#334155</td></tr>
+                            <tr><td>主文字</td><td>#1A1A1A</td><td style="background: #F5F5F5; color: #1a1a1a;">#F5F5F5</td></tr>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 性能目标 -->
+            <section>
+                <h2>性能目标</h2>
+                <div class="three-col">
+                    <div class="progress-card">
+                        <div class="number">&lt; 1s</div>
+                        <div class="label">规则诊断延迟</div>
+                    </div>
+                    <div class="progress-card">
+                        <div class="number">&lt; 30s</div>
+                        <div class="label">LLM 诊断延迟</div>
+                    </div>
+                    <div class="progress-card">
+                        <div class="number">100+</div>
+                        <div class="label">系统 QPS</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 设计决策 -->
+            <section>
+                <h2>设计决策</h2>
+                <table>
+                    <tr><th>日期</th><th>决策</th><th>理由</th></tr>
+                    <tr><td>2026-05-04</td><td>初始设计系统</td><td>功能优先，简单易用</td></tr>
+                    <tr><td>2026-05-04</td><td>平台色彩系统</td><td>YARN/Hive/Spark/Flink 各用独特色</td></tr>
+                    <tr><td>2026-05-04</td><td>系统字体优先</td><td>中文友好，无加载延迟</td></tr>
+                    <tr><td>2026-05-07</td><td>深色模式</td><td>支持低光环境工作</td></tr>
+                    <tr><td>2026-05-07</td><td>无障碍规范</td><td>WCAG 2.1 AA 合规</td></tr>
+                    <tr><td>2026-05-07</td><td>Lucide Icons</td><td>替换 emoji，视觉一致性</td></tr>
+                </table>
+            </section>
+
+            <!-- 关联文档 -->
+            <section>
+                <h2>关联文档</h2>
+                <table>
+                    <tr><th>文档</th><th>位置</th><th>描述</th></tr>
+                    <tr><td>设计系统</td><td>docs/design/DESIGN.md</td><td>核心设计规范</td></tr>
+                    <tr><td>组件规范</td><td>docs/design/09-component-specs.md</td><td>详细组件规范</td></tr>
+                    <tr><td>Dashboard 设计</td><td>docs/design/10-dashboard-home.md</td><td>首页详细设计</td></tr>
+                    <tr><td>架构设计</td><td>docs/design/01-architecture.md</td><td>技术架构</td></tr>
+                    <tr><td>架构评审</td><td>docs/architecture-review-report.md</td><td>架构评审报告</td></tr>
+                    <tr><td>设计预览</td><td>preview.html</td><td>视觉预览</td></tr>
+                </table>
+            </section>
+
+            <!-- 结束页 -->
+            <section class="title-slide">
+                <h1>谢谢</h1>
+                <p class="subtitle">AIOps 大数据智能诊断平台</p>
+                <div class="highlight-box" style="text-align: center; display: inline-block; margin: 20px auto;">
+                    <strong>核心价值</strong>：30秒内给出根因分析和修复建议
+                </div>
+                <p class="meta">PRD v1.0 &nbsp;|&nbsp; 2026-05-08</p>
+            </section>
+
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/dist/reveal.min.js"></script>
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            flowchart: {
+                useMaxWidth: true,
+                htmlLabels: true,
+                curve: 'basis'
+            },
+            themeVariables: {
+                primaryColor: '#EFF6FF',
+                primaryTextColor: '#1a1a1a',
+                primaryBorderColor: '#2563EB',
+                lineColor: '#666',
+                secondaryColor: '#F5F5F5',
+                tertiaryColor: '#FAFAFA'
+            }
+        });
+
+        Reveal.initialize({
+            hash: true,
+            slideNumber: 'c/t',
+            transition: 'slide',
+            transitionSpeed: 'default',
+            backgroundTransition: 'fade',
+            center: false,
+            width: 1280,
+            height: 720,
+            margin: 0.1
+        });
+    </script>
+</body>
+</html>
