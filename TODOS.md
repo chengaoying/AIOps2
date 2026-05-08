@@ -45,24 +45,24 @@
 ### 2.1 数据采集插件
 
 #### YARN Plugin
-- [ ] 实现REST API采集
-- [ ] 实现ATS采集
-- [ ] 实现Application状态、Container日志、作业耗时采集
+- [x] 实现REST API采集
+- [x] 实现ATS采集
+- [x] 实现Application状态、Container日志、作业耗时采集
 
 #### Hive Plugin
-- [ ] 实现HS2 API采集
-- [ ] 实现Hook采集
-- [ ] 实现HiveQL执行日志、查询计划、错误信息采集
+- [x] 实现HS2 API采集
+- [x] 实现Hook采集
+- [x] 实现HiveQL执行日志、查询计划、错误信息采集
 
 #### Spark Plugin
-- [ ] 实现History Server采集
-- [ ] 实现Livy API采集
-- [ ] 实现Stage/SQL执行、Executor日志采集
+- [x] 实现History Server采集
+- [x] 实现Livy API采集
+- [x] 实现Stage/SQL执行、Executor日志采集
 
 #### Flink Plugin
-- [ ] 实现REST API采集
-- [ ] 实现Metrics采集
-- [ ] 实现JobManager/TaskManager状态、Checkpoint采集
+- [x] 实现REST API采集
+- [x] 实现Metrics采集
+- [x] 实现JobManager/TaskManager状态、Checkpoint采集
 
 ### 2.2 元仓建设
 
