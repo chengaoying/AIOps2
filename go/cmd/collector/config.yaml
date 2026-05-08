@@ -1,0 +1,34 @@
+port: "8081"
+
+starrocks:
+  host: "starrocks"
+  port: 9030
+  user: "root"
+  password: ""
+  database: "aiops"
+
+plugins:
+  yarn:
+    enabled: true
+    api_url: "http://rm:8088"
+    interval: 5s
+  hive:
+    enabled: true
+    api_url: "http://hs2:10000"
+    interval: 10s
+  spark:
+    enabled: true
+    history_server: "http://spark-history:18080"
+    interval: 10s
+  flink:
+    enabled: true
+    rest_url: "http://flink:8081"
+    interval: 5s
+
+wal:
+  dir: "/var/log/aiops/wal"
+  max_file_size: 1073741824  # 1GB
+
+batch_writer:
+  batch_size: 1000
+  flush_interval: 5s
