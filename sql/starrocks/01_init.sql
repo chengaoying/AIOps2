@@ -132,3 +132,61 @@ CREATE TABLE IF NOT EXISTS knowledge_cards (
 DUPLICATE KEY(card_id)
 COMMENT '知识卡片表'
 DISTRIBUTED BY HASH(card_id) BUCKETS 10;
+
+-- 作业依赖关系表
+CREATE TABLE IF NOT EXISTS job_dependency (
+    id                BIGINT          AUTO_INCREMENT COMMENT '自增ID',
+    job_id            VARCHAR(128)    NOT NULL COMMENT '作业ID',
+    platform          VARCHAR(32)     NOT NULL COMMENT '平台类型',
+    dependency_job_id VARCHAR(128)    NOT NULL COMMENT '依赖作业ID',
+    dependency_type   VARCHAR(32)     DEFAULT 'DATA' COMMENT '依赖类型: DATA/TIME/RESOURCE',
+    create_time       DATETIME        DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+
+    PRIMARY KEY (id),
+    INDEX idx_job_id (job_id),
+    INDEX idx_dependency_job_id (dependency_job_id),
+    INDEX idx_platform (platform)
+) ENGINE=OLAP
+DUPLICATE KEY(id)
+COMMENT '作业依赖关系表'
+DISTRIBUTED BY HASH(job_id) BUCKETS 10;
+
+-- 统一作业元数据视图（联合所有平台）
+CREATE VIEW unified_job_view AS
+SELECT
+    job_id,
+    platform,
+    job_name,
+    status,
+    start_time,
+    end_time,
+    duration_ms,
+    submit_time,
+    priority,
+    user,
+    queue,
+    exit_code,
+    error_msg,
+    logs,
+    metrics,
+    dependency_job_ids,
+    raw_data,
+    create_time
+FROM job_meta
+WHERE status IN ('SUCCESS', 'FAILED', 'RUNNING', 'KILLED');
+
+-- 资源使用趋势视图
+CREATE VIEW mv_resource_trend AS
+SELECT
+    platform,
+    DATE(start_time) as date,
+    COUNT(*) as job_count,
+    AVG(metrics->>'$.memory_used_mb') as avg_memory_mb,
+    AVG(metrics->>'$.cpu_used_cores') as avg_cpu_cores,
+    MAX(metrics->>'$.memory_used_mb') as max_memory_mb,
+    MAX(metrics->>'$.cpu_used_cores') as max_cpu_cores,
+    SUM(CASE WHEN status = 'FAILED' THEN 1 ELSE 0 END) as failed_count
+FROM job_meta
+WHERE start_time >= DATE_SUB(CURRENT_DATE, INTERVAL 30 DAY)
+GROUP BY platform, DATE(start_time);
+
